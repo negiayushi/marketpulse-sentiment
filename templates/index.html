@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarketPulse — News Sentiment Analyzer</title>
+  <meta name="author" content="Ayushi Negi" />
+  <meta name="description" content="Market news sentiment analyzer for Indian stocks. Built by Ayushi Negi." />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-dot"></span>
+        <span class="logo-text">MarketPulse</span>
+        <span class="logo-tag">SENTIMENT ENGINE</span>
+      </div>
+      <div class="header-meta">
+        <span id="live-clock"></span>
+        <span class="market-badge" id="market-status">MARKET LIVE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>News <em>Sentiment</em><br/>Analyzer</h1>
+      <p>Real-time NLP analysis of financial news headlines for Indian markets.<br/>
+         Powered by TextBlob · Scraped from Moneycontrol & Economic Times</p>
+    </div>
+    <div class="ticker-bar">
+      <div class="ticker-track" id="ticker-track">
+        {% for symbol, info in stocks.items() %}
+        <span class="ticker-item" data-symbol="{{ symbol }}">
+          {{ info.name }} <span class="ticker-val">—</span>
+        </span>
+        {% endfor %}
+        <!-- duplicate for loop -->
+        {% for symbol, info in stocks.items() %}
+        <span class="ticker-item" data-symbol="{{ symbol }}">
+          {{ info.name }} <span class="ticker-val">—</span>
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── STOCK SELECTOR ── -->
+  <section class="selector-section">
+    <div class="container">
+      <p class="section-label">SELECT INSTRUMENT</p>
+      <div class="stock-grid">
+        {% for symbol, info in stocks.items() %}
+        <button class="stock-btn" data-symbol="{{ symbol }}" data-category="{{ info.category }}">
+          <span class="btn-category">{{ info.category }}</span>
+          <span class="btn-name">{{ info.name }}</span>
+          <span class="btn-symbol">{{ symbol }}</span>
+          <span class="btn-sentiment-dot"></span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ANALYSIS PANEL ── -->
+  <section class="analysis-section" id="analysis-section" style="display:none;">
+    <div class="container">
+
+      <!-- Stock header -->
+      <div class="stock-header">
+        <div class="stock-header-left">
+          <h2 id="stock-name">—</h2>
+          <span id="stock-symbol-tag">—</span>
+          <span id="stock-category-tag">—</span>
+        </div>
+        <div class="stock-header-right">
+          <div class="overall-sentiment" id="overall-sentiment-box">
+            <span class="sentiment-label">Overall</span>
+            <span class="sentiment-value" id="overall-sentiment-value">—</span>
+          </div>
+          <div class="polarity-score">
+            <span class="sentiment-label">Avg Polarity</span>
+            <span class="polarity-value" id="avg-polarity-value">—</span>
+          </div>
+          <span class="updated-time" id="updated-time">—</span>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card positive-card">
+          <span class="stat-num" id="pos-count">—</span>
+          <span class="stat-label">Positive</span>
+          <div class="stat-bar"><div class="stat-fill pos-fill" id="pos-bar"></div></div>
+        </div>
+        <div class="stat-card neutral-card">
+          <span class="stat-num" id="neu-count">—</span>
+          <span class="stat-label">Neutral</span>
+          <div class="stat-bar"><div class="stat-fill neu-fill" id="neu-bar"></div></div>
+        </div>
+        <div class="stat-card negative-card">
+          <span class="stat-num" id="neg-count">—</span>
+          <span class="stat-label">Negative</span>
+          <div class="stat-bar"><div class="stat-fill neg-fill" id="neg-bar"></div></div>
+        </div>
+        <div class="stat-card chart-card">
+          <canvas id="donut-chart" width="90" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-row">
+        <div class="chart-panel">
+          <p class="panel-label">30-DAY PRICE HISTORY</p>
+          <canvas id="price-chart"></canvas>
+          <p class="chart-note" id="price-note"></p>
+        </div>
+        <div class="chart-panel">
+          <p class="panel-label">SENTIMENT POLARITY PER HEADLINE</p>
+          <canvas id="polarity-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Headlines -->
+      <div class="headlines-panel">
+        <p class="panel-label">ANALYZED HEADLINES <span id="headline-count"></span></p>
+        <div id="headlines-list"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── LOADING ── -->
+  <div class="loader" id="loader" style="display:none;">
+    <div class="loader-inner">
+      <div class="loader-ring"></div>
+      <p>Scraping & analyzing headlines…</p>
+    </div>
+  </div>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section class="how-section">
+    <div class="container">
+      <p class="section-label">HOW IT WORKS</p>
+      <div class="how-grid">
+        <div class="how-card">
+          <span class="how-num">01</span>
+          <h3>Scrape</h3>
+          <p>Headlines are fetched live from Moneycontrol and Economic Times using BeautifulSoup</p>
+        </div>
+        <div class="how-card">
+          <span class="how-num">02</span>
+          <h3>Analyze</h3>
+          <p>TextBlob NLP computes polarity (−1 to +1) and subjectivity for each headline</p>
+        </div>
+        <div class="how-card">
+          <span class="how-num">03</span>
+          <h3>Aggregate</h3>
+          <p>Scores are averaged into an overall Bullish / Bearish / Neutral signal</p>
+        </div>
+        <div class="how-card">
+          <span class="how-num">04</span>
+          <h3>Correlate</h3>
+          <p>Sentiment is visualized alongside 30-day price history from Yahoo Finance</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>MarketPulse · Built by <strong style="color:var(--accent)">Ayushi Negi</strong> · Flask, TextBlob, yfinance, BeautifulSoup · <strong>Not financial advice</strong></p>
+      <p class="footer-sub">
+        <a href="https://github.com/negiayushi" style="color:var(--muted);text-decoration:none;" target="_blank">github.com/negiayushi</a>
+        &nbsp;·&nbsp; ayushinegi1405@gmail.com &nbsp;·&nbsp; A fintech learning project for Indian equity markets
+      </p>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
